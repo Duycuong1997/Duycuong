@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trang chủ</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="card">
+    <h1>Xin chào!</h1>
+    <p class="welcome">Bạn đã đăng nhập với tài khoản <strong id="username">...</strong></p>
+    <button id="logoutBtn" class="btn">Đăng xuất</button>
+  </div>
+
+  <script>
+    fetch('/api/me')
+      .then((res) => {
+        if (!res.ok) throw new Error();
+        return res.json();
+      })
+      .then((data) => {
+        document.getElementById('username').textContent = data.username;
+      })
+      .catch(() => (window.location.href = '/login'));
+
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      const res = await fetch('/api/logout', { method: 'POST' });
+      const data = await res.json();
+      window.location.href = data.redirect || '/login';
+    });
+  </script>
+</body>
+</html>

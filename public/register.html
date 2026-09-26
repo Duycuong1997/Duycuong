@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Đăng ký</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="card">
+    <h1>Đăng ký</h1>
+    <div id="message" class="message"></div>
+
+    <form id="registerForm">
+      <label for="username">Tên đăng nhập</label>
+      <input id="username" name="username" type="text" autocomplete="username"
+             pattern="[A-Za-z0-9_]{3,20}" title="3-20 ký tự: chữ, số hoặc dấu gạch dưới" required />
+
+      <label for="password">Mật khẩu</label>
+      <div class="password-wrap">
+        <input id="password" name="password" type="password" autocomplete="new-password" minlength="6" required />
+        <button type="button" class="toggle-password" data-target="password">Hiện</button>
+      </div>
+
+      <label for="confirm">Xác nhận mật khẩu</label>
+      <input id="confirm" name="confirm" type="password" autocomplete="new-password" minlength="6" required />
+
+      <button type="submit">Đăng ký</button>
+    </form>
+
+    <p class="footer">Đã có tài khoản? <a href="/login">Đăng nhập</a></p>
+  </div>
+
+  <script src="/app.js"></script>
+  <script>
+    handleForm('registerForm', '/api/register', () => {
+      setTimeout(() => (window.location.href = '/login'), 1200);
+    });
+  </script>
+</body>
+</html>

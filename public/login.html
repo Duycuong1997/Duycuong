@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Đăng nhập</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="card">
+    <h1>Đăng nhập</h1>
+    <div id="message" class="message"></div>
+
+    <form id="loginForm">
+      <label for="username">Tên đăng nhập</label>
+      <input id="username" name="username" type="text" autocomplete="username" required />
+
+      <label for="password">Mật khẩu</label>
+      <div class="password-wrap">
+        <input id="password" name="password" type="password" autocomplete="current-password" required />
+        <button type="button" class="toggle-password" data-target="password">Hiện</button>
+      </div>
+
+      <button type="submit">Đăng nhập</button>
+    </form>
+
+    <p class="footer">Chưa có tài khoản? <a href="/register">Đăng ký</a></p>
+  </div>
+
+  <script src="/app.js"></script>
+  <script>
+    handleForm('loginForm', '/api/login');
+  </script>
+</body>
+</html>
