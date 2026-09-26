@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Trang chủ{% endblock %}
+{% block content %}
+<h1>Xin chào!</h1>
+<p class="welcome">Bạn đã đăng nhập với tài khoản <strong>{{ username }}</strong></p>
+
+<form method="post" action="{{ url_for('logout') }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+  <button type="submit">Đăng xuất</button>
+</form>
+{% endblock %}

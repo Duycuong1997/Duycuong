@@ -1,3 +1,6 @@
-node_modules/
-data/users.json
+__pycache__/
+*.pyc
+.venv/
+venv/
+users.db
 .env

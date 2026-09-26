@@ -1,30 +1,33 @@
 # Duycuong
 
-Ứng dụng **Đăng ký / Đăng nhập** đơn giản viết bằng Node.js + Express.
+Ứng dụng **Đăng ký / Đăng nhập** viết bằng **Python (Flask) + SQLite**.
 
 ## Tính năng
 - Đăng ký tài khoản (kiểm tra tên đăng nhập, độ dài mật khẩu, xác nhận mật khẩu)
 - Đăng nhập / Đăng xuất bằng session (cookie `httpOnly`)
-- Mật khẩu được mã hoá bằng `scrypt` + salt (không lưu mật khẩu gốc)
+- Mật khẩu được mã hoá bằng `werkzeug.security` (không lưu mật khẩu gốc)
+- Chống CSRF bằng token ẩn trong form
 - Khoá tài khoản 15 phút sau 5 lần nhập sai
 - Trang `/dashboard` chỉ vào được khi đã đăng nhập
 
 ## Cách chạy
 ```bash
-npm install
-npm start
+python -m venv venv
+# Windows: venv\Scripts\activate    |    Linux/Mac: source venv/bin/activate
+pip install -r requirements.txt
+python app.py
 ```
-Mở trình duyệt: http://localhost:3000
+Mở trình duyệt: http://localhost:5000
 
-Biến môi trường (tuỳ chọn): `PORT`, `SESSION_SECRET`, `NODE_ENV=production`.
+Biến môi trường (tuỳ chọn): `PORT`, `SECRET_KEY`, `FLASK_DEBUG=1`, `FLASK_ENV=production`.
 
 ## Cấu trúc
 ```
-server.js            # Server Express: route trang + API đăng ký/đăng nhập
-public/login.html    # Trang đăng nhập
-public/register.html # Trang đăng ký
-public/dashboard.html# Trang sau khi đăng nhập
-public/app.js        # Xử lý form phía trình duyệt
-public/style.css     # Giao diện
-data/users.json      # Dữ liệu người dùng (tự tạo khi đăng ký)
+app.py                   # Toàn bộ logic: DB, đăng ký, đăng nhập, đăng xuất
+templates/base.html      # Khung chung + hiển thị thông báo
+templates/login.html     # Trang đăng nhập
+templates/register.html  # Trang đăng ký
+templates/dashboard.html # Trang sau khi đăng nhập
+static/style.css         # Giao diện
+users.db                 # CSDL SQLite (tự tạo khi chạy)
 ```
