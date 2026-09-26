@@ -48,6 +48,69 @@ def init_db():
             )
             """
         )
+        db.execute(
+            """
+            CREATE TABLE IF NOT EXISTS profiles (
+                user_id INTEGER PRIMARY KEY REFERENCES users(id),
+                l_name TEXT, f_name TEXT,
+                l_kana TEXT, f_kana TEXT,
+                email TEXT, tel TEXT, birthday TEXT, gender TEXT,
+                zip TEXT, pref TEXT, address TEXT,
+                updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+
+
+# ---------- Thông tin hội viên (会員情報) ----------
+PREFECTURES = [
+    "北海道", "青森県", "岩手県", "宮城県", "秋田県", "山形県", "福島県",
+    "茨城県", "栃木県", "群馬県", "埼玉県", "千葉県", "東京都", "神奈川県",
+    "新潟県", "富山県", "石川県", "福井県", "山梨県", "長野県", "岐阜県",
+    "静岡県", "愛知県", "三重県", "滋賀県", "京都府", "大阪府", "兵庫県",
+    "奈良県", "和歌山県", "鳥取県", "島根県", "岡山県", "広島県", "山口県",
+    "徳島県", "香川県", "愛媛県", "高知県", "福岡県", "佐賀県", "長崎県",
+    "熊本県", "大分県", "宮崎県", "鹿児島県", "沖縄県",
+]
+PROFILE_FIELDS = [
+    "l_name", "f_name", "l_kana", "f_kana", "email", "tel",
+    "birthday", "gender", "zip", "pref", "address",
+]
+KANA_RE = re.compile(r"^[ァ-ヶー　]+$")  # Katakana toàn góc (全角カナ)
+EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+TEL_RE = re.compile(r"^0\d{9,10}$")
+ZIP_RE = re.compile(r"^\d{7}$")
+DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+
+def validate_profile(data):
+    """Trả về dict {tên trường: thông báo lỗi}."""
+    errors = {}
+    for field, label in (("l_name", "姓 (Họ)"), ("f_name", "名 (Tên)")):
+        if not data[field]:
+            errors[field] = f"Vui lòng nhập {label}."
+        elif len(data[field]) > 30:
+            errors[field] = f"{label} tối đa 30 ký tự."
+    for field, label in (("l_kana", "セイ"), ("f_kana", "メイ")):
+        if not data[field]:
+            errors[field] = f"Vui lòng nhập {label}."
+        elif not KANA_RE.match(data[field]):
+            errors[field] = f"{label}: chỉ nhập Katakana toàn góc (全角カナ)."
+    if not EMAIL_RE.match(data["email"]):
+        errors["email"] = "Email không hợp lệ."
+    if data["tel"] and not TEL_RE.match(data["tel"]):
+        errors["tel"] = "Số điện thoại phải bắt đầu bằng 0 và có 10-11 chữ số."
+    if data["birthday"] and not DATE_RE.match(data["birthday"]):
+        errors["birthday"] = "Ngày sinh không hợp lệ."
+    if data["gender"] not in ("", "male", "female", "other"):
+        errors["gender"] = "Giới tính không hợp lệ."
+    if data["zip"] and not ZIP_RE.match(data["zip"]):
+        errors["zip"] = "Mã bưu điện phải gồm 7 chữ số (VD: 123-4567)."
+    if data["pref"] and data["pref"] not in PREFECTURES:
+        errors["pref"] = "Vui lòng chọn tỉnh/thành."
+    if len(data["address"]) > 200:
+        errors["address"] = "Địa chỉ tối đa 200 ký tự."
+    return errors
 
 
 # ---------- Giới hạn số lần đăng nhập sai ----------
@@ -180,6 +243,45 @@ def login():
 @login_required
 def dashboard():
     return render_template("dashboard.html", username=session["username"])
+
+
+@app.route("/member/edit", methods=["GET", "POST"])
+@login_required
+def member_edit():
+    db = get_db()
+    user = db.execute("SELECT id FROM users WHERE username = ?", (session["username"],)).fetchone()
+    if user is None:
+        session.clear()
+        return redirect(url_for("login"))
+
+    if request.method == "POST":
+        data = {f: request.form.get(f, "").strip() for f in PROFILE_FIELDS}
+        # Chuẩn hoá: bỏ dấu gạch ngang ở SĐT / mã bưu điện
+        data["tel"] = data["tel"].replace("-", "")
+        data["zip"] = data["zip"].replace("-", "")
+        errors = validate_profile(data)
+
+        if errors:
+            flash("Vui lòng kiểm tra lại các mục bị lỗi.", "error")
+            return render_template("member_edit.html", profile=data, errors=errors, prefectures=PREFECTURES)
+
+        db.execute(
+            f"""
+            INSERT INTO profiles (user_id, {", ".join(PROFILE_FIELDS)})
+            VALUES (?, {", ".join("?" * len(PROFILE_FIELDS))})
+            ON CONFLICT(user_id) DO UPDATE SET
+                {", ".join(f"{f} = excluded.{f}" for f in PROFILE_FIELDS)},
+                updated_at = CURRENT_TIMESTAMP
+            """,
+            (user["id"], *(data[f] for f in PROFILE_FIELDS)),
+        )
+        db.commit()
+        flash("Đã lưu thông tin hội viên.", "success")
+        return redirect(url_for("member_edit"))
+
+    row = db.execute("SELECT * FROM profiles WHERE user_id = ?", (user["id"],)).fetchone()
+    profile = {f: (row[f] if row and row[f] else "") for f in PROFILE_FIELDS}
+    return render_template("member_edit.html", profile=profile, errors={}, prefectures=PREFECTURES)
 
 
 @app.route("/logout", methods=["POST"])

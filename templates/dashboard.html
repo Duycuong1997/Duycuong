@@ -4,6 +4,8 @@
 <h1>Xin chào!</h1>
 <p class="welcome">Bạn đã đăng nhập với tài khoản <strong>{{ username }}</strong></p>
 
+<a class="btn secondary" href="{{ url_for('member_edit') }}">会員情報変更 (Thông tin hội viên)</a>
+
 <form method="post" action="{{ url_for('logout') }}">
   <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
   <button type="submit">Đăng xuất</button>

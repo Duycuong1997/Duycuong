@@ -9,6 +9,7 @@
 - Chống CSRF bằng token ẩn trong form
 - Khoá tài khoản 15 phút sau 5 lần nhập sai
 - Trang `/dashboard` chỉ vào được khi đã đăng nhập
+- Trang **会員情報変更** (`/member/edit`): sửa thông tin hội viên — 姓/名, セイ/メイ (kiểm tra Katakana toàn góc), email, điện thoại, ngày sinh, giới tính, mã bưu điện, tỉnh/thành, địa chỉ
 
 ## Cách chạy
 ```bash
@@ -28,6 +29,7 @@ templates/base.html      # Khung chung + hiển thị thông báo
 templates/login.html     # Trang đăng nhập
 templates/register.html  # Trang đăng ký
 templates/dashboard.html # Trang sau khi đăng nhập
+templates/member_edit.html # Trang 会員情報変更 (thông tin hội viên)
 static/style.css         # Giao diện
 users.db                 # CSDL SQLite (tự tạo khi chạy)
 ```
