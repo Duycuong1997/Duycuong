@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bài 2 - Hồ sơ của tôi</title>
+  <!-- Nối file CSS (trang trí) vào trang -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- HTML = khung xương của trang: tiêu đề, đoạn văn, nút bấm... -->
+  <h1>Hồ sơ của tôi</h1>
+
+  <div class="the">
+    <p>Tên: <strong id="ten-hien-thi">Người học code</strong></p>
+    <p>Sở thích: <span id="so-thich">Lập trình</span></p>
+    <p>Số lần bấm nút: <span id="dem">0</span></p>
+  </div>
+
+  <div class="the">
+    <label for="o-nhap">Nhập tên mới:</label>
+    <input id="o-nhap" type="text" placeholder="Ví dụ: Linh">
+    <button id="nut-doi-ten">Đổi tên</button>
+    <p id="thong-bao"></p>
+  </div>
+
+  <!-- Nối file JavaScript (hành động) vào trang, đặt cuối để HTML tải xong trước -->
+  <script src="app.js"></script>
+</body>
+</html>
