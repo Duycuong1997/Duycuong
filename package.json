@@ -1,0 +1,15 @@
+{
+  "name": "duycuong-register",
+  "version": "1.0.0",
+  "description": "会員情報登録 form with automated tests (unit + Playwright E2E).",
+  "private": true,
+  "scripts": {
+    "serve": "node scripts/serve.js",
+    "test": "node --test tests/validation.test.js",
+    "test:unit": "node --test tests/validation.test.js",
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.47.0"
+  }
+}

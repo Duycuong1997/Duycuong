@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>会員情報登録</title>
+  <style>
+    body { font-family: sans-serif; max-width: 640px; margin: 2rem auto; padding: 0 1rem; }
+    h1 { font-size: 1.4rem; }
+    .form-input { margin-bottom: 1rem; }
+    .form-input-label { display: block; font-weight: bold; margin-bottom: .25rem; }
+    input[type="text"], input[type="email"] {
+      width: 100%; height: 40px; padding: 0 8px; box-sizing: border-box;
+      border: 1px solid #ccc; border-radius: 3px;
+    }
+    .error { color: #c00; font-size: .85rem; margin-top: .25rem; min-height: 1em; }
+    .notice { color: #666; font-size: .8rem; }
+    button { height: 44px; padding: 0 24px; cursor: pointer; }
+    .success { color: #060; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1 class="page-title">会員情報登録</h1>
+
+  <form id="register-form" novalidate>
+    <div class="form-input">
+      <label class="form-input-label" for="L_NAME">姓</label>
+      <input type="text" name="L_NAME" id="L_NAME" size="25" maxlength="30" />
+      <div class="error" data-error-for="lastName"></div>
+    </div>
+
+    <div class="form-input">
+      <label class="form-input-label" for="F_NAME">名</label>
+      <input type="text" name="F_NAME" id="F_NAME" size="25" maxlength="30" />
+      <div class="error" data-error-for="firstName"></div>
+    </div>
+
+    <div class="form-input">
+      <label class="form-input-label" for="L_KANA">セイ</label>
+      <input type="text" name="L_KANA" id="L_KANA" size="25" maxlength="30" />
+      <div class="notice">全角カナで入力してください。</div>
+      <div class="error" data-error-for="lastKana"></div>
+    </div>
+
+    <div class="form-input">
+      <label class="form-input-label" for="F_KANA">メイ</label>
+      <input type="text" name="F_KANA" id="F_KANA" size="25" maxlength="30" />
+      <div class="notice">全角カナで入力してください。</div>
+      <div class="error" data-error-for="firstKana"></div>
+    </div>
+
+    <div class="form-input">
+      <label class="form-input-label" for="EMAIL">メールアドレス</label>
+      <input type="email" name="EMAIL" id="EMAIL" />
+      <div class="error" data-error-for="email"></div>
+    </div>
+
+    <button type="submit" id="submit-btn">登録する</button>
+    <p class="success" id="success-msg" hidden>登録内容を確認しました。</p>
+  </form>
+
+  <script src="/src/validation.js"></script>
+  <script src="/public/form.js"></script>
+</body>
+</html>
