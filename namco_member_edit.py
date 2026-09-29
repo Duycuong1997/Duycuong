@@ -23,6 +23,7 @@ from playwright.sync_api import sync_playwright
 
 BASE_URL = "https://parks2.bandainamco-am.co.jp"
 LOGIN_URL = f"{BASE_URL}/login.html"
+DEFAULT_EDIT_URL = f"{BASE_URL}/member_regist.html?request=edit"
 
 PROFILE_DIR = Path(__file__).with_name(".namco_profile")
 # Lưu URL trang sửa thông tin tìm được, lần sau mở thẳng
@@ -165,6 +166,7 @@ def main():
     url = args.url
     if not url and EDIT_URL_FILE.exists():
         url = EDIT_URL_FILE.read_text(encoding="utf-8").strip()
+    url = url or DEFAULT_EDIT_URL
 
     with sync_playwright() as p:
         context = p.chromium.launch_persistent_context(
