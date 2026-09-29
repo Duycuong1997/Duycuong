@@ -1,8 +1,8 @@
 """Điền sẵn họ tên trên trang thay đổi thông tin thành viên NAMCO.
 
 - Lưu phiên đăng nhập vào thư mục profile, lần sau không cần đăng nhập lại.
-- Tự phát hiện khi đăng nhập xong, không cần quay lại Terminal nhấn Enter.
-- Chờ form tải xong thay vì chờ cứng 3 giây.
+- Tự nhận ra khi bạn mở trang sửa thông tin, không cần quay lại Terminal nhấn Enter.
+- Nhớ URL trang sửa thông tin, lần sau mở thẳng.
 - Kiểm tra lại giá trị sau khi điền.
 - KHÔNG tự bấm lưu.
 
@@ -14,19 +14,22 @@ Ví dụ:
 import argparse
 import re
 import sys
+import time
 from pathlib import Path
 
+from playwright.sync_api import Error as PlaywrightError
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 from playwright.sync_api import sync_playwright
 
 BASE_URL = "https://parks2.bandainamco-am.co.jp"
 LOGIN_URL = f"{BASE_URL}/login.html"
-MEMBER_EDIT_URL = f"{BASE_URL}/member_edit.html"
 
 PROFILE_DIR = Path(__file__).with_name(".namco_profile")
+# Lưu URL trang sửa thông tin tìm được, lần sau mở thẳng
+EDIT_URL_FILE = Path(__file__).with_name(".namco_edit_url")
 FORM_SELECTOR = "#L_NAME"
 PAGE_TIMEOUT_MS = 60_000
-LOGIN_TIMEOUT_MS = 5 * 60_000
+WAIT_FORM_TIMEOUT_S = 10 * 60
 
 # Katakana toàn góc, dấu ー, dấu ・ và khoảng trắng
 KATAKANA_RE = re.compile(r"^[゠-ヿ　 ]+$")
@@ -38,6 +41,7 @@ def parse_args():
     parser.add_argument("--mei", default="THI LINH", help="名")
     parser.add_argument("--sei-kana", default="ホ", help="セイ (katakana)")
     parser.add_argument("--mei-kana", default="ティリン", help="メイ (katakana)")
+    parser.add_argument("--url", help="URL trang sửa thông tin (mặc định: URL đã lưu lần trước)")
     parser.add_argument(
         "--fresh", action="store_true", help="Bỏ phiên đăng nhập đã lưu, đăng nhập lại từ đầu"
     )
@@ -49,32 +53,47 @@ def parse_args():
     return args
 
 
-def is_on_form(page):
-    try:
-        page.wait_for_selector(FORM_SELECTOR, state="visible", timeout=5_000)
-        return True
-    except PlaywrightTimeoutError:
-        return False
+def find_form_page(context):
+    """Trả về tab đang có form sửa họ tên, không có thì trả về None."""
+    for pg in context.pages:
+        try:
+            if pg.locator(FORM_SELECTOR).first.is_visible():
+                return pg
+        except PlaywrightError:
+            pass
+    return None
 
 
-def open_member_edit(page):
-    """Mở trang member_edit, nếu chưa đăng nhập thì chờ người dùng đăng nhập."""
-    page.goto(MEMBER_EDIT_URL, wait_until="domcontentloaded", timeout=PAGE_TIMEOUT_MS)
-    if is_on_form(page):
-        print("Đã có phiên đăng nhập, bỏ qua bước đăng nhập.")
-        return
+def open_member_edit(context, page, url):
+    """Mở trang sửa thông tin và trả về tab có form.
 
-    if "login" not in page.url:
-        page.goto(LOGIN_URL, wait_until="domcontentloaded", timeout=PAGE_TIMEOUT_MS)
+    Nếu đã biết URL (lưu từ lần trước hoặc --url) thì mở thẳng. Nếu không,
+    người dùng tự đăng nhập và bấm vào trang sửa thông tin, script tự nhận ra form.
+    """
+    if url:
+        page.goto(url, wait_until="domcontentloaded", timeout=PAGE_TIMEOUT_MS)
+        try:
+            page.wait_for_selector(FORM_SELECTOR, state="visible", timeout=5_000)
+            print("Đã mở thẳng trang sửa thông tin.")
+            return page
+        except PlaywrightTimeoutError:
+            pass
 
+    page.goto(LOGIN_URL, wait_until="domcontentloaded", timeout=PAGE_TIMEOUT_MS)
     print("================================")
-    print("Hãy đăng nhập NAMCO trên trình duyệt.")
-    print("Script sẽ tự tiếp tục sau khi đăng nhập xong (tối đa 5 phút).")
+    print("1. Đăng nhập NAMCO trên cửa sổ Chrome vừa mở.")
+    print("2. Tự bấm vào trang thay đổi thông tin thành viên (会員情報変更).")
+    print("3. Khi form hiện ra, script sẽ tự điền (chờ tối đa 10 phút).")
     print("================================")
-    page.wait_for_url(lambda url: "login" not in url, timeout=LOGIN_TIMEOUT_MS)
 
-    page.goto(MEMBER_EDIT_URL, wait_until="domcontentloaded", timeout=PAGE_TIMEOUT_MS)
-    page.wait_for_selector(FORM_SELECTOR, state="visible", timeout=PAGE_TIMEOUT_MS)
+    deadline = time.monotonic() + WAIT_FORM_TIMEOUT_S
+    while time.monotonic() < deadline:
+        form_page = find_form_page(context)
+        if form_page:
+            EDIT_URL_FILE.write_text(form_page.url, encoding="utf-8")
+            return form_page
+        time.sleep(1)
+    raise PlaywrightTimeoutError("Không thấy form sửa họ tên sau 10 phút.")
 
 
 def fill_fields(page, fields):
@@ -109,10 +128,15 @@ def main():
         ("#F_KANA", "メイ", args.mei_kana),
     ]
 
-    if args.fresh and PROFILE_DIR.exists():
+    if args.fresh:
         import shutil
 
-        shutil.rmtree(PROFILE_DIR)
+        shutil.rmtree(PROFILE_DIR, ignore_errors=True)
+        EDIT_URL_FILE.unlink(missing_ok=True)
+
+    url = args.url
+    if not url and EDIT_URL_FILE.exists():
+        url = EDIT_URL_FILE.read_text(encoding="utf-8").strip()
 
     with sync_playwright() as p:
         context = p.chromium.launch_persistent_context(
@@ -124,7 +148,8 @@ def main():
         page = context.pages[0] if context.pages else context.new_page()
 
         try:
-            open_member_edit(page)
+            page = open_member_edit(context, page, url)
+            page.bring_to_front()
             print("Đang ở:", page.url)
             print()
             failed = fill_fields(page, fields)
