@@ -29,6 +29,7 @@ PROFILE_DIR = Path(__file__).with_name(".namco_profile")
 EDIT_URL_FILE = Path(__file__).with_name(".namco_edit_url")
 FORM_SELECTOR = "#L_NAME"
 PAGE_TIMEOUT_MS = 60_000
+FILL_TIMEOUT_MS = 5_000
 WAIT_FORM_TIMEOUT_S = 10 * 60
 
 # Katakana toàn góc, dấu ー, dấu ・ và khoảng trắng
@@ -97,26 +98,53 @@ def open_member_edit(context, page, url):
 
 
 def fill_fields(page, fields):
-    """Điền từng ô và trả về danh sách ô bị lỗi."""
+    """Điền từng ô đang hiển thị và trả về danh sách ô bị lỗi.
+
+    Ô ẩn (type="hidden") là ô trang không cho sửa, nên bỏ qua chứ không ép giá trị.
+    """
     failed = []
     for selector, label, value in fields:
-        field = page.locator(selector)
+        field = page.locator(f"{selector}:visible").first
         if field.count() == 0:
-            print(f"✗ Không tìm thấy ô {label} ({selector})")
+            if page.locator(selector).count() > 0:
+                print(f"✗ {label:<4}: ô {selector} bị ẩn, trang không cho sửa ở đây")
+            else:
+                print(f"✗ {label:<4}: không tìm thấy ô {selector}")
             failed.append(label)
             continue
 
-        field.fill(value)
-        field.dispatch_event("change")
-        field.blur()
+        try:
+            field.fill(value, timeout=FILL_TIMEOUT_MS)
+            field.dispatch_event("change")
+            field.blur()
+            actual = field.input_value()
+        except PlaywrightError as e:
+            print(f"✗ {label:<4}: không điền được ({e.message.splitlines()[0]})")
+            failed.append(label)
+            continue
 
-        actual = field.input_value()
         if actual == value:
             print(f"✓ {label:<4}: {value}")
         else:
             print(f"✗ {label:<4}: muốn '{value}' nhưng ô đang là '{actual}'")
             failed.append(label)
     return failed
+
+
+def print_visible_inputs(page):
+    """In các ô nhập chữ đang hiển thị để tìm đúng id của ô cần điền."""
+    inputs = page.eval_on_selector_all(
+        "input:not([type=hidden]):not([type=checkbox]):not([type=radio])"
+        ":not([type=submit]):not([type=button]), textarea",
+        """els => els.filter(e => e.offsetParent !== null).map(e => ({
+            id: e.id, name: e.name, value: e.value,
+            label: (e.labels && e.labels[0] ? e.labels[0].innerText : "").trim()
+        }))""",
+    )
+    print()
+    print("Các ô nhập đang hiển thị trên trang (gửi phần này để sửa script):")
+    for i in inputs:
+        print(f"  id={i['id']!r} name={i['name']!r} value={i['value']!r} label={i['label']!r}")
 
 
 def main():
@@ -153,6 +181,8 @@ def main():
             print("Đang ở:", page.url)
             print()
             failed = fill_fields(page, fields)
+            if failed:
+                print_visible_inputs(page)
         except PlaywrightTimeoutError as e:
             print("Hết thời gian chờ:", e)
             failed = ["timeout"]
